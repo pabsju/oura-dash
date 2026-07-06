@@ -37,6 +37,16 @@ def test_results_table_columns():
     assert tbl.iloc[0]["metric"] == "average_hrv"
 
 
+def test_results_table_empty_report_has_columns():
+    report = BenchmarkReport(results=[], interim=False)
+    tbl = app.results_table(report)
+    assert list(tbl.columns) == [
+        "metric", "label", "n_baseline", "n_window", "median_baseline", "median_window",
+        "cliffs_delta", "ci", "p_value", "q_value",
+    ]
+    assert len(tbl) == 0
+
+
 def test_module_imports_without_token(monkeypatch):
     monkeypatch.delenv("OURA_TOKEN", raising=False)
     import importlib

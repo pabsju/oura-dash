@@ -10,7 +10,7 @@ from oura_dash.stats import BenchmarkReport
 def latest_values(frame: pd.DataFrame) -> pd.DataFrame:
     if frame.empty:
         return pd.DataFrame(columns=["metric", "day", "value"])
-    idx = frame.sort_values("day").groupby("metric")["day"].idxmax()
+    idx = frame.groupby("metric")["day"].idxmax()
     return frame.loc[idx, ["metric", "day", "value"]].sort_values("metric").reset_index(drop=True)
 
 
@@ -28,8 +28,16 @@ def trend_figure(
     return fig
 
 
+_RESULTS_TABLE_COLUMNS = [
+    "metric", "label", "n_baseline", "n_window", "median_baseline", "median_window",
+    "cliffs_delta", "ci", "p_value", "q_value",
+]
+
+
 def results_table(report: BenchmarkReport) -> pd.DataFrame:
     labels = metric_labels()
+    if not report.results:
+        return pd.DataFrame(columns=_RESULTS_TABLE_COLUMNS)
     return pd.DataFrame([
         {
             "metric": r.metric, "label": labels.get(r.metric, r.metric),
@@ -84,10 +92,14 @@ def _main() -> None:  # pragma: no cover - entry path
         render(storage, settings)
 
 
-try:  # pragma: no cover - only runs under `streamlit run`
-    import streamlit as _st  # noqa: F401
+def _streamlit_running() -> bool:
+    try:
+        import streamlit as _st
 
-    if _st.runtime.exists():
-        _main()
-except Exception:
-    pass
+        return _st.runtime.exists()
+    except Exception:
+        return False
+
+
+if _streamlit_running():  # pragma: no cover - only runs under `streamlit run`
+    _main()
