@@ -50,10 +50,24 @@ def results_table(report: BenchmarkReport) -> pd.DataFrame:
     ])
 
 
-def render(storage, settings) -> None:  # pragma: no cover - Streamlit UI
+def _cached_benchmark(frame: pd.DataFrame, window_start: date, window_end: date,
+                       today: date | None) -> BenchmarkReport:  # pragma: no cover - Streamlit UI
     import streamlit as st
 
-    from oura_dash.stats import benchmark
+    @st.cache_data(show_spinner=False)
+    def _run(frame: pd.DataFrame, window_start: date, window_end: date,
+              today: date | None) -> BenchmarkReport:
+        from oura_dash.config import Settings
+        from oura_dash.stats import benchmark
+
+        s = Settings(token="cache", window_start=window_start, window_end=window_end, today=today)
+        return benchmark(frame, s)
+
+    return _run(frame, window_start, window_end, today)
+
+
+def render(storage, settings) -> None:  # pragma: no cover - Streamlit UI
+    import streamlit as st
 
     frame = build_frame(storage)
     labels = metric_labels()
@@ -77,7 +91,12 @@ def render(storage, settings) -> None:  # pragma: no cover - Streamlit UI
                 )
 
     with bench:
-        report = benchmark(frame, settings)
+        col1, col2 = st.columns(2)
+        with col1:
+            chosen_start = st.date_input("Window start", value=settings.window_start)
+        with col2:
+            chosen_end = st.date_input("Window end", value=settings.window_end)
+        report = _cached_benchmark(frame, chosen_start, chosen_end, settings.today)
         if report.interim:
             st.warning("Interim: window not yet complete; results are provisional.")
         st.dataframe(results_table(report), width="stretch")

@@ -1,7 +1,9 @@
 import subprocess
+import sys
 from datetime import date
 from pathlib import Path
 
+import pydantic
 import typer
 
 from oura_dash import metrics as metrics_mod
@@ -15,7 +17,17 @@ app = typer.Typer(help="Oura daily-metrics dashboard and benchmark.")
 
 
 def _make_settings() -> Settings:
-    return Settings()
+    try:
+        return Settings()
+    except pydantic.ValidationError as exc:
+        if any(err.get("loc") == ("token",) for err in exc.errors()):
+            typer.echo(
+                "OURA_TOKEN not set. Copy .env.example to .env and add your "
+                "Personal Access Token.",
+                err=True,
+            )
+            raise typer.Exit(code=1) from exc
+        raise
 
 
 def _make_client(settings: Settings) -> OuraClient:
@@ -86,4 +98,4 @@ def _run_streamlit(args: list[str]) -> object:
 def serve() -> None:
     """Launch the Streamlit dashboard."""
     app_path = str(Path(__file__).with_name("app.py"))
-    _run_streamlit(["streamlit", "run", app_path])
+    _run_streamlit([sys.executable, "-m", "streamlit", "run", app_path])

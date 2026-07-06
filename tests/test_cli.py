@@ -37,6 +37,31 @@ def test_stats_on_fresh_db_does_not_crash(monkeypatch, tmp_path):
     assert "metric" in result.stdout
 
 
+def test_serve_invokes_streamlit(monkeypatch):
+    calls = []
+
+    def fake_run_streamlit(args):
+        calls.append(args)
+        return None
+
+    monkeypatch.setattr(cli, "_run_streamlit", fake_run_streamlit)
+    result = runner.invoke(cli.app, ["serve"])
+    assert result.exit_code == 0
+    assert len(calls) == 1
+    argv = calls[0]
+    assert "streamlit" in argv
+    assert "run" in argv
+    assert argv[-1].endswith("app.py")
+
+
+def test_missing_token_friendly_error(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("OURA_TOKEN", raising=False)
+    result = runner.invoke(cli.app, ["stats"])
+    assert result.exit_code != 0
+    assert "OURA_TOKEN" in result.output
+
+
 def test_sync_command_reports_counts(monkeypatch, tmp_path):
     db = tmp_path / "t.db"
     monkeypatch.setattr(cli, "_make_settings",
