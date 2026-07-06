@@ -41,3 +41,16 @@ def test_build_frame_long_format_and_daily_average():
 def test_metric_labels_map():
     labels = metric_labels()
     assert labels["average_hrv"]  # non-empty label exists
+
+
+def test_empty_frame_has_typed_columns():
+    with Storage(":memory:") as st:
+        st.init_schema()
+        df = build_frame(st)
+    assert pd.api.types.is_datetime64_any_dtype(df["day"])
+    assert pd.api.types.is_float_dtype(df["value"])
+
+
+def test_bool_values_rejected():
+    m = next(m for m in METRICS if m.key == "stress_high")
+    assert m.extract({"stress_high": True}) is None

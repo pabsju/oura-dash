@@ -18,14 +18,14 @@ class MetricDef:
 
 def _num(row: dict[str, Any], field: str) -> float | None:
     v = row.get(field)
-    return float(v) if isinstance(v, (int, float)) else None
+    return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
 
 def _nested_avg(row: dict[str, Any], field: str) -> float | None:
     obj = row.get(field)
     if isinstance(obj, dict):
         v = obj.get("average")
-        return float(v) if isinstance(v, (int, float)) else None
+        return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
     return None
 
 
@@ -69,7 +69,13 @@ def build_frame(storage: Storage) -> pd.DataFrame:
                 continue
             rows.append({"day": day, "metric": m.key, "value": val})
     if not rows:
-        return pd.DataFrame(columns=["day", "metric", "value"])
+        return pd.DataFrame(
+            {
+                "day": pd.Series(dtype="datetime64[ns]"),
+                "metric": pd.Series(dtype=str),
+                "value": pd.Series(dtype=float),
+            }
+        )
     df = pd.DataFrame(rows)
     df["day"] = pd.to_datetime(df["day"])
     df = df.groupby(["day", "metric"], as_index=False)["value"].mean()
