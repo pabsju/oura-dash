@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from typing import Sequence
 
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
 from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 
@@ -30,7 +30,7 @@ class BenchmarkReport:
     interim: bool
 
 
-def cliffs_delta(a: Sequence[float], b: Sequence[float]) -> float:
+def cliffs_delta(a: ArrayLike, b: ArrayLike) -> float:
     a_arr = np.asarray(a, dtype=float)
     b_arr = np.asarray(b, dtype=float)
     if a_arr.size == 0 or b_arr.size == 0:

@@ -78,7 +78,7 @@ def build_frame(storage: Storage) -> pd.DataFrame:
         )
     df = pd.DataFrame(rows)
     df["day"] = pd.to_datetime(df["day"])
-    df = df.groupby(["day", "metric"], as_index=False)["value"].mean()
+    df = df.groupby(["day", "metric"])["value"].mean().reset_index()
     return df
 
 
