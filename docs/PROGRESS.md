@@ -13,5 +13,5 @@ that task's test file). Do not start a task until every box above it is checked.
 - [x] Task 7 — metrics.py (`tests/test_metrics.py`)
 - [x] Task 8 — stats.py (`tests/test_stats.py`)
 - [x] Task 9 — cli.py (`tests/test_cli.py`)
-- [ ] Task 10 — app.py (`tests/test_app.py`)
+- [x] Task 10 — app.py (`tests/test_app.py`)
 - [ ] Task 11 — integration + docs (`tests/test_integration_sandbox.py`, README)
