@@ -8,5 +8,6 @@ venv/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+*.egg-info/
 .memsearch/
 .DS_Store
