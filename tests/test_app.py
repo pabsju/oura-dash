@@ -68,10 +68,10 @@ def test_render_executes_without_errors(monkeypatch, tmp_path):
     with Storage(db_path) as storage:
         storage.init_schema()
         storage.upsert("sleep", [
-            {"id": "sleep-1", "day": "2026-01-05", "average_hrv": 50.0},
-            {"id": "sleep-2", "day": "2026-06-20", "average_hrv": 55.0},
-            {"id": "sleep-3", "day": "2026-06-21", "average_hrv": 60.0},
-            {"id": "sleep-4", "day": "2026-06-22", "average_hrv": 58.0},
+            {"id": "sleep-1", "day": "2026-01-05", "average_hrv": 50.0, "type": "long_sleep"},
+            {"id": "sleep-2", "day": "2026-06-20", "average_hrv": 55.0, "type": "long_sleep"},
+            {"id": "sleep-3", "day": "2026-06-21", "average_hrv": 60.0, "type": "long_sleep"},
+            {"id": "sleep-4", "day": "2026-06-22", "average_hrv": 58.0, "type": "long_sleep"},
         ])
         storage.upsert("daily_stress", [
             {"id": "stress-1", "day": "2026-01-05", "stress_high": 50.0},

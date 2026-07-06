@@ -38,3 +38,10 @@ def test_rows_without_id_skipped():
     with Storage(":memory:") as s:
         s.init_schema()
         assert s.upsert("session", [{"day": "2024-01-01"}]) == 0
+
+
+def test_upsert_uses_start_day_when_no_day():
+    with Storage(":memory:") as s:
+        s.init_schema()
+        s.upsert("enhanced_tag", [{"id": "t1", "start_day": "2026-06-20"}])
+        assert s.last_day("enhanced_tag") == date(2026, 6, 20)

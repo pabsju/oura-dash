@@ -9,6 +9,7 @@ class Storage:
     def __init__(self, db_path: Path | str) -> None:
         self._conn = sqlite3.connect(str(db_path))
         self._conn.row_factory = sqlite3.Row
+        self.init_schema()
 
     def __enter__(self) -> "Storage":
         return self
@@ -36,10 +37,11 @@ class Storage:
             rid = row.get("id")
             if rid is None:
                 continue
+            day = row.get("day") or row.get("start_day")
             self._conn.execute(
                 "INSERT OR REPLACE INTO records (collection, id, day, payload) "
                 "VALUES (?, ?, ?, ?)",
-                (collection, rid, row.get("day"), json.dumps(row)),
+                (collection, rid, day, json.dumps(row)),
             )
             count += 1
         self._conn.commit()

@@ -56,7 +56,7 @@ def _boot_ci(a, b, n_boot, rng):
 def benchmark(
     frame: pd.DataFrame, settings: Settings, *, n_boot: int = 1000, rng_seed: int = 0
 ) -> BenchmarkReport:
-    interim = settings.current_day() < settings.window_end
+    interim = settings.current_day() <= settings.window_end
     if frame.empty:
         return BenchmarkReport(results=[], interim=interim)
 

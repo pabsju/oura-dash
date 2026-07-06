@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Protocol
 
 from oura_dash.collections import COLLECTIONS, Collection
@@ -28,7 +29,11 @@ def incremental(
     storage.init_schema()
     counts: dict[str, int] = {}
     for c in collections:
-        start = storage.last_day(c.name) or settings.history_start
+        last_day = storage.last_day(c.name)
+        if last_day is not None:
+            start = max(settings.history_start, last_day - timedelta(days=7))
+        else:
+            start = settings.history_start
         rows = client.fetch(c.endpoint, start, settings.current_day())
         counts[c.name] = storage.upsert(c.name, rows)
     return counts

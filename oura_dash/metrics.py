@@ -33,13 +33,22 @@ def _f(field: str) -> Callable[[dict[str, Any]], float | None]:
     return lambda row: _num(row, field)
 
 
+def _long_sleep_num(field: str) -> Callable[[dict[str, Any]], float | None]:
+    def extract(row: dict[str, Any]) -> float | None:
+        if row.get("type") != "long_sleep":
+            return None
+        return _num(row, field)
+
+    return extract
+
+
 METRICS: list[MetricDef] = [
     MetricDef("stress_high", "daily_stress", "High-stress time", "s", "lower_better", _f("stress_high")),
     MetricDef("recovery_high", "daily_stress", "High-recovery time", "s", "higher_better", _f("recovery_high")),
-    MetricDef("average_hrv", "sleep", "Average HRV", "ms", "higher_better", _f("average_hrv")),
-    MetricDef("average_heart_rate", "sleep", "Avg sleeping HR", "bpm", "lower_better", _f("average_heart_rate")),
-    MetricDef("lowest_heart_rate", "sleep", "Lowest HR", "bpm", "lower_better", _f("lowest_heart_rate")),
-    MetricDef("sleep_efficiency", "sleep", "Sleep efficiency", "%", "higher_better", _f("efficiency")),
+    MetricDef("average_hrv", "sleep", "Average HRV", "ms", "higher_better", _long_sleep_num("average_hrv")),
+    MetricDef("average_heart_rate", "sleep", "Avg sleeping HR", "bpm", "lower_better", _long_sleep_num("average_heart_rate")),
+    MetricDef("lowest_heart_rate", "sleep", "Lowest HR", "bpm", "lower_better", _long_sleep_num("lowest_heart_rate")),
+    MetricDef("sleep_efficiency", "sleep", "Sleep efficiency", "%", "higher_better", _long_sleep_num("efficiency")),
     MetricDef("sleep_score", "daily_sleep", "Sleep score", "", "higher_better", _f("score")),
     MetricDef("readiness_score", "daily_readiness", "Readiness score", "", "higher_better", _f("score")),
     MetricDef("temperature_deviation", "daily_readiness", "Temp deviation", "°C", "neutral", _f("temperature_deviation")),

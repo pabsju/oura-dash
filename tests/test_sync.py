@@ -37,7 +37,7 @@ def test_incremental_starts_from_last_day():
         st.init_schema()
         st.upsert("daily_stress", [{"id": "a", "day": "2026-06-30"}])
         sync.incremental(client, st, _settings(), collections=cols)
-        assert client.calls[0][1] == date(2026, 6, 30)  # re-fetches last stored day
+        assert client.calls[0][1] == date(2026, 6, 23)  # re-fetches a 7-day trailing window
         assert client.calls[0][2] == date(2026, 7, 6)
 
 
