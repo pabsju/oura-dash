@@ -4,7 +4,7 @@ Rules: a task's box is checked **only** after its tests pass (`pytest` green for
 that task's test file). Do not start a task until every box above it is checked.
 
 - [x] Task 0 — Scaffold, tooling, oracle (`pytest` runs; `oura-dash --help` works)
-- [ ] Task 1 — config.py (`tests/test_config.py`)
+- [x] Task 1 — config.py (`tests/test_config.py`)
 - [ ] Task 2 — models.py (`tests/test_models.py`)
 - [ ] Task 3 — collections.py registry (`tests/test_collections.py`)
 - [ ] Task 4 — client.py (`tests/test_client.py`)
