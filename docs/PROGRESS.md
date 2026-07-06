@@ -9,7 +9,7 @@ that task's test file). Do not start a task until every box above it is checked.
 - [x] Task 3 — collections.py registry (`tests/test_collections.py`)
 - [x] Task 4 — client.py (`tests/test_client.py`)
 - [x] Task 5 — storage.py (`tests/test_storage.py`)
-- [ ] Task 6 — sync.py (`tests/test_sync.py`)
+- [x] Task 6 — sync.py (`tests/test_sync.py`)
 - [ ] Task 7 — metrics.py (`tests/test_metrics.py`)
 - [ ] Task 8 — stats.py (`tests/test_stats.py`)
 - [ ] Task 9 — cli.py (`tests/test_cli.py`)
