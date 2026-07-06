@@ -76,3 +76,31 @@ pytest              # unit tests (fast, no network)
 pytest -m integration   # live-sandbox integration tests
 ruff check . && mypy oura_dash
 ```
+
+## Deviations & roadmap
+
+Where the implementation intentionally differs from (or narrows) the original
+design spec:
+
+- **Nightly sleep metrics use only the main long sleep.** HRV, resting/average
+  heart rate, and sleep efficiency are extracted only from `sleep` records
+  with `type == "long_sleep"`; naps (`sleep`, `late_nap`, `rest` types) are
+  excluded so they don't bias nightly averages.
+- **Collections synced but not yet benchmarked.** `daily_resilience`,
+  `workout`, and `session` are fetched and stored but don't have metric
+  extractors yet (resilience is an ordinal level; workout/session would need
+  per-event-to-daily aggregation). `enhanced_tag` and `rest_mode_period` are
+  stored as intended covariates but aren't yet surfaced on the dashboard or
+  used to flag/exclude days from the benchmark. These are roadmap items.
+- **Statistical caveats.** Daily series are autocorrelated, so p-values are
+  approximate (a moving-block bootstrap is future work). Cliff's-delta
+  bootstrap CIs degenerate to a point interval when the two groups separate
+  completely (|delta| = 1); treat such CIs as optimistic.
+- **Benchmark window** is selectable in the dashboard's Benchmark tab and via
+  `oura-dash stats --window-start/--window-end`; it defaults to
+  **2026-06-16 → 2026-09-01**, and results are flagged interim until the
+  window closes.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
