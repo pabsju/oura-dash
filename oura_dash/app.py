@@ -93,14 +93,5 @@ def _main() -> None:  # pragma: no cover - entry path
         render(storage, settings)
 
 
-def _streamlit_running() -> bool:
-    try:
-        import streamlit as _st
-
-        return _st.runtime.exists()
-    except Exception:
-        return False
-
-
-if _streamlit_running():  # pragma: no cover - only runs under `streamlit run`
+if __name__ == "__main__":  # pragma: no cover - only runs under `streamlit run`
     _main()

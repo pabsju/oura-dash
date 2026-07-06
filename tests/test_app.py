@@ -56,7 +56,10 @@ def test_module_imports_without_token(monkeypatch):
 def test_render_executes_without_errors(monkeypatch, tmp_path):
     from streamlit.testing.v1 import AppTest
 
+    import oura_dash.app as app_mod
     from oura_dash.storage import Storage
+
+    APP_PATH = app_mod.__file__
 
     db_path = tmp_path / "oura.db"
     monkeypatch.setenv("OURA_TOKEN", "dummy")
@@ -68,34 +71,17 @@ def test_render_executes_without_errors(monkeypatch, tmp_path):
             {"id": "sleep-1", "day": "2026-01-05", "average_hrv": 50.0},
             {"id": "sleep-2", "day": "2026-06-20", "average_hrv": 55.0},
             {"id": "sleep-3", "day": "2026-06-21", "average_hrv": 60.0},
+            {"id": "sleep-4", "day": "2026-06-22", "average_hrv": 58.0},
         ])
         storage.upsert("daily_stress", [
             {"id": "stress-1", "day": "2026-01-05", "stress_high": 50.0},
             {"id": "stress-2", "day": "2026-06-20", "stress_high": 55.0},
             {"id": "stress-3", "day": "2026-06-21", "stress_high": 60.0},
+            {"id": "stress-4", "day": "2026-06-22", "stress_high": 62.0},
         ])
 
-    # Streamlit auto-derives each `plotly_chart` element's ID from its type and
-    # rendered content. Two metrics with genuinely different data/labels never
-    # collide on that hash regardless of whether `key=` is set, so a faithful
-    # regression test has to force two loop iterations to render byte-identical
-    # figures (same day/value series *and* the same label) -- exactly the
-    # pathological case a missing `key=` fails to guard against. The fix
-    # (`key=f"trend_{key}"`) makes each chart's ID unique regardless of content.
-    monkeypatch.setattr(
-        "oura_dash.app.metric_labels",
-        lambda: {"average_hrv": "Same Label", "stress_high": "Same Label"},
-    )
-
-    script = """
-import oura_dash.app as app
-from oura_dash.config import Settings
-from oura_dash.storage import Storage
-
-settings = Settings()
-with Storage(settings.db_path) as st:
-    app.render(st, settings)
-"""
-    at = AppTest.from_string(script)
+    at = AppTest.from_file(APP_PATH)
     at.run(timeout=60)
     assert not at.exception, at.exception
+    assert len(at.tabs) == 3
+    assert len(at.get("plotly_chart")) >= 2
