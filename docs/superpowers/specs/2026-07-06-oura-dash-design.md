@@ -5,32 +5,42 @@
 
 ## Goal
 
-Personal web dashboard for Oura Ring data. View metrics through the day, updated
-hourly. Pull all historical data. Benchmark whether an intervention period
-(**2026-06-16 → 2026-09-16**) shows statistically significant differences in any
-metric versus baseline (all history before 2026-06-16).
+Personal web dashboard for Oura Ring data. **Daily** metrics only, refreshed
+daily. Pull all historical data. Nice historical-trend visuals. Benchmark whether
+an intervention period (**2026-06-16 → 2026-09-01**, configurable) shows
+statistically significant differences in any metric versus baseline (all history
+before the window start).
+
+The primary point is spotting changes across the configured window. All metrics of
+interest (HRV, stress, etc.) are daily, and the statistical tests are over daily
+values — so no intraday/hourly data is collected. The window is a config value:
+future runs can point the same analysis at a different date range.
 
 Public repo → well-tested throughout. A forward-only markdown step tracker acts as
 the test oracle: a step is only marked done when its tests pass.
 
 ## API reality (from live OpenAPI spec v1.35)
 
-Determines what "throughout the day" can mean:
+All metrics of interest resolve to one daily value:
 
 | Metric | Granularity | Source endpoint |
 |---|---|---|
-| **Heart rate** | True intraday (all-day bpm samples) | `heartrate` (needs Gen3 ring — confirmed present) |
-| **HRV** | Nightly only (`average_hrv` + intraday samples *during sleep*) | `sleep` |
-| **Stress** | Daily only (`stress_high`, `recovery_high` seconds; `day_summary` enum) | `daily_stress` |
-| Everything else | Daily summaries or per-event | see below |
+| **HRV** | Nightly `average_hrv` (one value per night) | `sleep` |
+| **Stress** | Daily (`stress_high`, `recovery_high` seconds; `day_summary` enum) | `daily_stress` |
+| **Heart rate** | Nightly resting/avg/lowest (one value per night) | `sleep` |
+| Everything else | Daily summaries or per-event aggregated to daily | see below |
+
+Intraday endpoints (`heartrate` bpm samples) are **not collected** — no daily
+metric of interest needs sub-day resolution, and the statistical tests are over
+daily values.
 
 - **Auth:** Personal Access Token (single `Authorization: Bearer <token>` header).
   OAuth2 exists but is unnecessary for single-user.
 - **Pagination:** `next_token` cursor on collection endpoints.
 - **Sandbox:** `/v2/sandbox/usercollection/*` returns real-shaped example payloads
   with *any* bearer string. Used for CI integration tests — no secret required.
-- **Interim caveat:** today is 2026-07-06; intervention window closes 2026-09-16,
-  so the benchmark is an interim result until then.
+- **Interim caveat:** today is 2026-07-06; the default window closes 2026-09-01, so
+  the benchmark is an interim result until then.
 
 ### Collections tracked
 
@@ -48,7 +58,6 @@ Determines what "throughout the day" can mean:
 - `vO2_max` — VO₂ max
 - `workout` — aggregated to daily count / duration / calories
 - `session` — aggregated to daily count / duration
-- `heartrate` — intraday bpm (also yields daily resting/min HR)
 
 **Contextual (stored, flagged, NOT benchmarked):**
 - `tag`, `enhanced_tag` — user annotations; potential confounders shown alongside
@@ -63,7 +72,7 @@ Small, single-purpose modules with clear interfaces:
 | Module | Responsibility | Depends on |
 |---|---|---|
 | `models.py` | Pydantic models mirroring API schemas | — |
-| `client.py` | HTTP client: bearer auth, **generic paginated collection fetcher** parameterized by (endpoint, model), 429 backoff, date-chunking | models |
+| `client.py` | HTTP client: bearer auth, **generic paginated collection fetcher** parameterized by (endpoint, model), 429 backoff, `start_date`/`end_date` chunking | models |
 | `storage.py` | SQLite: one table per collection, idempotent upsert by `id`/`day`, read helpers → pandas DataFrames | models |
 | `sync.py` | Orchestrates `backfill` (all history) + `incremental` (since last stored row) across the collection registry | client, storage |
 | `stats.py` | Benchmark engine (below) | storage |
@@ -74,40 +83,40 @@ Small, single-purpose modules with clear interfaces:
 ### Collection registry
 
 A single registry maps each collection → (endpoint path, pydantic model, primary
-key, date-param style). `client` and `sync` iterate the registry, so adding a
-metric is one entry, not new code. `daily_*` endpoints use `start_date`/`end_date`;
-`heartrate` uses `start_datetime`/`end_datetime`.
+key). `client` and `sync` iterate the registry, so adding a metric is one entry,
+not new code. All collections use `start_date`/`end_date`.
 
 ## Data flow
 
 ```
-cron (hourly) → `oura-dash sync` → client → pydantic models → SQLite
-                                                                  │
-                          Streamlit app  ◄──────────────────────┤ (read-only)
-                          stats engine   ◄──────────────────────┘
+cron (daily) → `oura-dash sync` → client → pydantic models → SQLite
+                                                                 │
+                         Streamlit app  ◄──────────────────────┤ (read-only)
+                         stats engine   ◄──────────────────────┘
 ```
 
-Hourly refresh documented in README (cron line + systemd-timer alternative).
+Daily refresh documented in README (cron line + systemd-timer alternative).
 `sync` is idempotent: re-running never duplicates rows.
 
 ## Dashboard (Streamlit + Plotly)
 
-- **Today** — intraday heart-rate chart; latest daily stress + nightly HRV; last-sync badge.
+- **Overview** — latest value + recent sparkline per metric; last-sync badge.
 - **Trends** — daily time series for every benchmarkable metric, with the
-  intervention window shaded.
+  configured window shaded and contextual tags/rest-mode marked.
 - **Benchmark** — per-metric stat table (baseline vs intervention: n, medians,
-  effect size + CI, p, q) and before/after distribution plots.
+  effect size + CI, p, q) and before/after distribution plots. Window start/end
+  selectable so a different range can be tested without code changes.
 
 ## Statistics
 
-Per benchmarkable metric:
-1. Split into baseline (`day < 2026-06-16`) vs intervention (`06-16 ≤ day ≤ 09-16`).
+Per benchmarkable metric (window defaults to 2026-06-16 → 2026-09-01, configurable):
+1. Split into baseline (`day < window_start`) vs intervention (`window_start ≤ day ≤ window_end`).
 2. **Mann-Whitney U** (non-parametric; robust to non-normal wearable data).
 3. **Benjamini-Hochberg FDR** across all metrics → q-values.
 4. Effect size: **Cliff's delta** with bootstrap CI. Report n, medians both groups.
 
 Statistical honesty surfaced in output and UI:
-- **Interim warning** while today < 2026-09-16 (window incomplete).
+- **Interim warning** while today < window_end (window incomplete).
 - **Autocorrelation caveat**: daily wearable series are not iid; p-values are
   approximate. (Block-bootstrap left as a documented future extension.)
 - Effect sizes + CIs reported alongside p/q, never p-values alone.
@@ -121,8 +130,8 @@ Statistical honesty surfaced in output and UI:
   BH-FDR ordering).
 - **Integration:** hit the live **sandbox** with a dummy token — verifies real API
   shape end-to-end, CI-safe, no secret.
-- **Edge:** empty date ranges; missing intraday (non-Gen3 fallback); incomplete
-  intervention window (interim result); collections returning zero rows.
+- **Edge:** empty date ranges; incomplete intervention window (interim result);
+  collections returning zero rows; a metric absent for the whole baseline or window.
 
 ## Test oracle — `docs/PROGRESS.md`
 
@@ -135,7 +144,7 @@ oracle.
 
 Python 3.11+ · httpx · pydantic + pydantic-settings · typer · sqlite3 (stdlib) ·
 pandas · scipy · statsmodels · streamlit · plotly · pytest + respx · ruff · mypy ·
-conda `environment.yml` (+ `requirements.txt` fallback).
+conda `environment.yml` (+ `requirements.txt` fallback). No intraday/timeseries deps.
 
 ## Config & secrets
 
