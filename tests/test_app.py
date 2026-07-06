@@ -85,3 +85,19 @@ def test_render_executes_without_errors(monkeypatch, tmp_path):
     assert not at.exception, at.exception
     assert len(at.tabs) == 3
     assert len(at.get("plotly_chart")) >= 2
+
+
+def test_render_on_fresh_db_shows_empty_state(monkeypatch, tmp_path):
+    from streamlit.testing.v1 import AppTest
+
+    import oura_dash.app as app_mod
+
+    APP_PATH = app_mod.__file__
+
+    monkeypatch.setenv("OURA_TOKEN", "dummy")
+    monkeypatch.setenv("OURA_DB_PATH", str(tmp_path / "fresh.db"))
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=60)
+    assert not at.exception, at.exception
+    assert any("No data" in i.value for i in at.info)

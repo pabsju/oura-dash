@@ -90,6 +90,7 @@ def _main() -> None:  # pragma: no cover - entry path
 
     settings = Settings()
     with Storage(settings.db_path) as storage:
+        storage.init_schema()
         render(storage, settings)
 
 
