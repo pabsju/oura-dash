@@ -20,9 +20,8 @@ class OuraClient:
         self._base_url = base_url.rstrip("/")
         self._max_retries = max_retries
         self._sleep = sleep
-        self._http = http or httpx.Client(
-            headers={"Authorization": f"Bearer {token}"}, timeout=30.0
-        )
+        self._auth = {"Authorization": f"Bearer {token}"}
+        self._http = http or httpx.Client(timeout=30.0)
 
     def fetch(self, endpoint: str, start: date, end: date) -> list[dict[str, Any]]:
         params: dict[str, str] = {
@@ -46,7 +45,7 @@ class OuraClient:
         url = f"{self._base_url}{endpoint}"
         attempt = 0
         while True:
-            resp = self._http.get(url, params=params)
+            resp = self._http.get(url, params=params, headers=self._auth)
             if resp.status_code == 429 and attempt < self._max_retries:
                 retry_after = float(resp.headers.get("Retry-After", "1"))
                 self._sleep(retry_after)

@@ -49,6 +49,17 @@ def test_fetch_retries_on_429():
 
 
 @respx.mock
+def test_fetch_authenticates_with_injected_http_client():
+    route = respx.get(f"{BASE}{EP}").mock(
+        return_value=httpx.Response(200, json={"data": [], "next_token": None})
+    )
+    injected = httpx.Client()  # no auth headers configured
+    OuraClient("secret", http=injected).fetch(EP, date(2024, 1, 1), date(2024, 1, 2))
+    req = route.calls[0].request
+    assert req.headers["authorization"] == "Bearer secret"
+
+
+@respx.mock
 def test_fetch_raises_after_max_retries():
     respx.get(f"{BASE}{EP}").mock(return_value=httpx.Response(429, headers={"Retry-After": "0"}))
     client = OuraClient("tok", max_retries=2, sleep=lambda _s: None)
