@@ -62,7 +62,7 @@ def render(storage, settings) -> None:  # pragma: no cover - Streamlit UI
 
     with overview:
         st.subheader("Latest values")
-        st.dataframe(latest_values(frame))
+        st.dataframe(latest_values(frame), width="stretch")
 
     with trends:
         if frame.empty:
@@ -72,14 +72,15 @@ def render(storage, settings) -> None:  # pragma: no cover - Streamlit UI
                 st.plotly_chart(
                     trend_figure(frame, key, settings.window_start, settings.window_end,
                                  labels.get(key, key)),
-                    use_container_width=True,
+                    key=f"trend_{key}",
+                    width="stretch",
                 )
 
     with bench:
         report = benchmark(frame, settings)
         if report.interim:
             st.warning("Interim: window not yet complete; results are provisional.")
-        st.dataframe(results_table(report))
+        st.dataframe(results_table(report), width="stretch")
         st.caption("Daily series are autocorrelated; p-values are approximate.")
 
 
