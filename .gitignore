@@ -10,4 +10,5 @@ venv/
 .ruff_cache/
 *.egg-info/
 .memsearch/
+.claude/
 .DS_Store
