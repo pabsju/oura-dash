@@ -56,6 +56,17 @@ def test_bool_values_rejected():
     assert m.extract({"stress_high": True}) is None
 
 
+def test_sleep_stage_durations_tracked():
+    for key, field in [("rem_sleep_duration", "rem_sleep_duration"),
+                       ("deep_sleep_duration", "deep_sleep_duration")]:
+        m = next(m for m in METRICS if m.key == key)
+        assert m.collection == "sleep"
+        assert m.direction == "higher_better"
+        assert m.extract({"type": "long_sleep", field: 5400}) == 5400.0
+        assert m.extract({"type": "late_nap", field: 5400}) is None  # naps excluded
+        assert m.extract({"type": "long_sleep"}) is None
+
+
 def test_naps_excluded_from_sleep_metrics():
     with Storage(":memory:") as st:
         st.init_schema()

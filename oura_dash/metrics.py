@@ -49,6 +49,8 @@ METRICS: list[MetricDef] = [
     MetricDef("average_heart_rate", "sleep", "Avg sleeping HR", "bpm", "lower_better", _long_sleep_num("average_heart_rate")),
     MetricDef("lowest_heart_rate", "sleep", "Lowest HR", "bpm", "lower_better", _long_sleep_num("lowest_heart_rate")),
     MetricDef("sleep_efficiency", "sleep", "Sleep efficiency", "%", "higher_better", _long_sleep_num("efficiency")),
+    MetricDef("rem_sleep_duration", "sleep", "REM sleep", "s", "higher_better", _long_sleep_num("rem_sleep_duration")),
+    MetricDef("deep_sleep_duration", "sleep", "Deep sleep", "s", "higher_better", _long_sleep_num("deep_sleep_duration")),
     MetricDef("sleep_score", "daily_sleep", "Sleep score", "", "higher_better", _f("score")),
     MetricDef("readiness_score", "daily_readiness", "Readiness score", "", "higher_better", _f("score")),
     MetricDef("temperature_deviation", "daily_readiness", "Temp deviation", "°C", "neutral", _f("temperature_deviation")),
