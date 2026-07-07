@@ -3,8 +3,10 @@
 Personal Oura Ring daily-metrics dashboard and configurable-window statistical
 benchmark. Pulls all historical daily data into SQLite, visualizes trends, and
 tests whether a date window (default **2026-06-16 → 2026-09-01**) differs
-significantly from baseline history (Mann-Whitney U + Benjamini-Hochberg FDR +
-Cliff's delta).
+significantly from baseline (Mann-Whitney U + Benjamini-Hochberg FDR +
+Cliff's delta). Two baselines are reported side by side: all history before the
+window, and a bounded baseline window (default **2026-01-16 → window start**,
+configurable via `OURA_BASELINE_START` or the dashboard date picker).
 
 ## What the Oura API actually exposes
 

@@ -51,19 +51,20 @@ def results_table(report: BenchmarkReport) -> pd.DataFrame:
 
 
 def _cached_benchmark(frame: pd.DataFrame, window_start: date, window_end: date,
-                       today: date | None) -> BenchmarkReport:  # pragma: no cover - Streamlit UI
+                       today: date | None,
+                       baseline_start: date | None = None) -> BenchmarkReport:  # pragma: no cover - Streamlit UI
     import streamlit as st
 
     @st.cache_data(show_spinner=False)
     def _run(frame: pd.DataFrame, window_start: date, window_end: date,
-              today: date | None) -> BenchmarkReport:
+              today: date | None, baseline_start: date | None) -> BenchmarkReport:
         from oura_dash.config import Settings
         from oura_dash.stats import benchmark
 
         s = Settings(token="cache", window_start=window_start, window_end=window_end, today=today)
-        return benchmark(frame, s)
+        return benchmark(frame, s, baseline_start=baseline_start)
 
-    return _run(frame, window_start, window_end, today)
+    return _run(frame, window_start, window_end, today, baseline_start)
 
 
 def render(storage, settings) -> None:  # pragma: no cover - Streamlit UI
@@ -91,16 +92,27 @@ def render(storage, settings) -> None:  # pragma: no cover - Streamlit UI
                 )
 
     with bench:
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             chosen_start = st.date_input("Window start", value=settings.window_start)
         with col2:
             chosen_end = st.date_input("Window end", value=settings.window_end)
+        with col3:
+            chosen_baseline = st.date_input("Baseline start", value=settings.baseline_start)
         report = _cached_benchmark(frame, chosen_start, chosen_end, settings.today)
         if report.interim:
             st.warning("Interim: window not yet complete; results are provisional.")
+        st.subheader("Window vs all history")
         st.dataframe(results_table(report), width="stretch")
-        st.caption("Daily series are autocorrelated; p-values are approximate.")
+        st.subheader(f"Window vs baseline window ({chosen_baseline} → {chosen_start})")
+        if chosen_baseline >= chosen_start:
+            st.warning("Baseline start must be before window start.")
+        else:
+            bounded = _cached_benchmark(frame, chosen_start, chosen_end, settings.today,
+                                        baseline_start=chosen_baseline)
+            st.dataframe(results_table(bounded), width="stretch")
+        st.caption("Daily series are autocorrelated; p-values are approximate. "
+                   "FDR correction is applied within each table separately.")
 
 
 def _main() -> None:  # pragma: no cover - entry path

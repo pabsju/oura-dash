@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import date
 
 import numpy as np
 import pandas as pd
@@ -54,7 +55,8 @@ def _boot_ci(a, b, n_boot, rng):
 
 
 def benchmark(
-    frame: pd.DataFrame, settings: Settings, *, n_boot: int = 1000, rng_seed: int = 0
+    frame: pd.DataFrame, settings: Settings, *, n_boot: int = 1000, rng_seed: int = 0,
+    baseline_start: date | None = None,
 ) -> BenchmarkReport:
     interim = settings.current_day() <= settings.window_end
     if frame.empty:
@@ -64,6 +66,8 @@ def benchmark(
     ws = pd.Timestamp(settings.window_start)
     we = pd.Timestamp(settings.window_end)
     is_base = days < ws
+    if baseline_start is not None:
+        is_base &= days >= pd.Timestamp(baseline_start)
     is_win = (days >= ws) & (days <= we)
 
     rng = np.random.default_rng(rng_seed)

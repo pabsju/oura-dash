@@ -28,6 +28,28 @@ def test_stats_command_prints_table(monkeypatch, tmp_path):
     assert "average_hrv" in result.stdout
 
 
+def test_stats_prints_both_baseline_tables(monkeypatch, tmp_path):
+    db = tmp_path / "t.db"
+    with Storage(db) as st:
+        st.init_schema()
+        st.upsert("sleep", [
+            {"id": f"b{i}", "day": f"2026-01-0{i+1}", "average_hrv": 40 + i, "type": "long_sleep"}
+            for i in range(5)
+        ])
+        st.upsert("sleep", [
+            {"id": f"w{i}", "day": f"2026-06-2{i}", "average_hrv": 60 + i, "type": "long_sleep"}
+            for i in range(5)
+        ])
+    monkeypatch.setattr(cli, "_make_settings",
+                        lambda: Settings(token="x", db_path=db, today=date(2026, 9, 2)))
+    result = runner.invoke(cli.app, ["stats", "--baseline-start", "2026-01-03"])
+    assert result.exit_code == 0
+    assert "vs all history" in result.stdout
+    assert "vs baseline window (2026-01-03" in result.stdout
+    # bounded table has n_base 3, all-history table has 5
+    assert result.stdout.count("average_hrv") == 2
+
+
 def test_stats_on_fresh_db_does_not_crash(monkeypatch, tmp_path):
     db = tmp_path / "fresh.db"
     monkeypatch.setattr(cli, "_make_settings",

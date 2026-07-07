@@ -57,6 +57,22 @@ def test_interim_flag_false_after_window_end():
     assert report.interim is False
 
 
+def test_baseline_start_bounds_baseline():
+    frame = _frame([40, 41, 39, 38, 42], [60, 61, 59, 62, 63])
+    # baseline days run 2026-01-01..2026-01-05; bound at 01-03 keeps 3 of 5
+    report = benchmark(frame, _settings(), n_boot=50, baseline_start=date(2026, 1, 3))
+    assert report.results[0].n_baseline == 3
+    # None keeps full history (current behavior)
+    report_all = benchmark(frame, _settings(), n_boot=50, baseline_start=None)
+    assert report_all.results[0].n_baseline == 5
+
+
+def test_baseline_start_after_data_yields_no_results():
+    frame = _frame([40, 41, 42], [50, 51, 52])
+    report = benchmark(frame, _settings(), n_boot=50, baseline_start=date(2026, 6, 15))
+    assert report.results == []
+
+
 def test_metric_with_too_few_points_skipped():
     frame = _frame([40], [50])  # only 1 point per group
     report = benchmark(frame, _settings(), n_boot=50)

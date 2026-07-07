@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     base_url: str = "https://api.ouraring.com"
     window_start: date = date(2026, 6, 16)
     window_end: date = date(2026, 9, 1)
+    baseline_start: date = date(2026, 1, 16)
     history_start: date = date(2016, 1, 1)
     today: date | None = None
 

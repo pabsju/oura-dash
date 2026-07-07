@@ -64,22 +64,7 @@ def sync() -> None:
         typer.echo(f"{name}: {n}")
 
 
-@app.command()
-def stats(
-    window_start: str = typer.Option(None, help="YYYY-MM-DD override"),
-    window_end: str = typer.Option(None, help="YYYY-MM-DD override"),
-) -> None:
-    """Benchmark the window vs baseline and print a table."""
-    settings = _make_settings()
-    if window_start:
-        settings.window_start = date.fromisoformat(window_start)
-    if window_end:
-        settings.window_end = date.fromisoformat(window_end)
-    with Storage(settings.db_path) as storage:
-        frame = metrics_mod.build_frame(storage)
-    report = stats_mod.benchmark(frame, settings)
-    if report.interim:
-        typer.echo("** INTERIM: window not yet complete; results are provisional. **")
+def _print_report(report: stats_mod.BenchmarkReport) -> None:
     typer.echo(f"{'metric':<28}{'n_base':>7}{'n_win':>7}{'med_base':>10}{'med_win':>10}{'delta':>8}{'p':>9}{'q':>9}")
     for r in report.results:
         typer.echo(
@@ -87,6 +72,32 @@ def stats(
             f"{r.median_baseline:>10.2f}{r.median_window:>10.2f}"
             f"{r.cliffs_delta:>8.2f}{r.p_value:>9.4f}{r.q_value:>9.4f}"
         )
+
+
+@app.command()
+def stats(
+    window_start: str = typer.Option(None, help="YYYY-MM-DD override"),
+    window_end: str = typer.Option(None, help="YYYY-MM-DD override"),
+    baseline_start: str = typer.Option(None, help="YYYY-MM-DD override for bounded baseline"),
+) -> None:
+    """Benchmark the window vs all history and vs a bounded baseline window."""
+    settings = _make_settings()
+    if window_start:
+        settings.window_start = date.fromisoformat(window_start)
+    if window_end:
+        settings.window_end = date.fromisoformat(window_end)
+    if baseline_start:
+        settings.baseline_start = date.fromisoformat(baseline_start)
+    with Storage(settings.db_path) as storage:
+        frame = metrics_mod.build_frame(storage)
+    report_all = stats_mod.benchmark(frame, settings)
+    report_bounded = stats_mod.benchmark(frame, settings, baseline_start=settings.baseline_start)
+    if report_all.interim:
+        typer.echo("** INTERIM: window not yet complete; results are provisional. **")
+    typer.echo("== Window vs all history ==")
+    _print_report(report_all)
+    typer.echo(f"\n== Window vs baseline window ({settings.baseline_start} → {settings.window_start}) ==")
+    _print_report(report_bounded)
     typer.echo("\nNote: daily series are autocorrelated; p-values are approximate.")
 
 

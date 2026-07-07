@@ -58,7 +58,8 @@ def test_bool_values_rejected():
 
 def test_sleep_stage_durations_tracked():
     for key, field in [("rem_sleep_duration", "rem_sleep_duration"),
-                       ("deep_sleep_duration", "deep_sleep_duration")]:
+                       ("deep_sleep_duration", "deep_sleep_duration"),
+                       ("total_sleep_duration", "total_sleep_duration")]:
         m = next(m for m in METRICS if m.key == key)
         assert m.collection == "sleep"
         assert m.direction == "higher_better"
